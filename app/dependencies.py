@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -6,15 +8,15 @@ from app.database import get_db
 from app import models
 from app.security import decodificar_token
 
-# HTTPBearer (em vez de OAuth2PasswordBearer) faz o botão "Authorize" do Swagger
-# pedir só um campo de texto para colar o token — o esquema OAuth2PasswordBearer
-# pediria usuário/senha num formulário próprio, que não bate com nossa rota de
-# login (que recebe JSON, não form-data), e sempre resultava em erro ali.
-security_scheme = HTTPBearer()
+# auto_error=False: por padrão o HTTPBearer responde 403 quando nenhum token
+# é enviado, o que não é semanticamente correto (403 é "autenticado mas sem
+# permissão"; a ausência de credenciais é 401 "não autenticado"). Desligamos
+# o comportamento automático e levantamos o 401 nós mesmos logo abaixo.
+security_scheme = HTTPBearer(auto_error=False)
 
 
 def get_usuario_atual(
-    credenciais: HTTPAuthorizationCredentials = Depends(security_scheme),
+    credenciais: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
     db: Session = Depends(get_db),
 ) -> models.Usuario:
     credenciais_invalidas = HTTPException(
@@ -22,6 +24,9 @@ def get_usuario_atual(
         detail="Não foi possível validar as credenciais",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if credenciais is None:
+        raise credenciais_invalidas
 
     token = credenciais.credentials
     payload = decodificar_token(token, tipo_esperado="access")
