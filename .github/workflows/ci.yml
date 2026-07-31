@@ -30,5 +30,3 @@ jobs:
 
       - name: Verificar se a aplicação importa sem erro
         run: python -c "from app.main import app; print('OK: app importa sem erro')"
-        env:
-          SECRET_KEY: chave-de-teste-usada-apenas-no-ci
