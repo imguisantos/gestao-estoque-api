@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches:
-      - develop
       - main
+      - develop
 
   pull_request:
     branches:
@@ -34,7 +34,8 @@ jobs:
           SECRET_KEY: chave-de-teste-usada-apenas-no-ci
         run: pytest -v
 
-      - name: Verificar se a aplicação importa
+      - name: Verificar se a aplicação inicia
         env:
           SECRET_KEY: chave-de-teste-usada-apenas-no-ci
-        run: python -c "import app.main; print('Aplicação carregada com sucesso!')"
+        run: |
+          python -c "import app.main; print('Aplicação carregada com sucesso!')"
