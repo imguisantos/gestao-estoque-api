@@ -110,3 +110,55 @@ def test_relatorio_resumo_estoque_reflete_movimentacoes(client, auth_headers, pr
     assert corpo["total_produtos"] == 1
     assert len(corpo["produtos_estoque_baixo"]) == 1
     assert corpo["produtos_estoque_baixo"][0]["quantidade_estoque"] == 5
+
+
+def test_movimentacao_aceita_data_customizada(client, auth_headers, produto_id):
+    """Permite registrar uma movimentação retroativa, informando a data manualmente."""
+    resposta = client.post(
+        "/movimentacoes/",
+        json={
+            "produto_id": produto_id,
+            "tipo": "ENTRADA",
+            "quantidade": 10,
+            "data": "2026-01-01T10:00:00",
+        },
+        headers=auth_headers,
+    )
+    assert resposta.status_code == 201
+    assert resposta.json()["data"].startswith("2026-01-01")
+
+
+def test_movimentacao_sem_data_usa_data_atual(client, auth_headers, produto_id):
+    resposta = client.post(
+        "/movimentacoes/",
+        json={"produto_id": produto_id, "tipo": "ENTRADA", "quantidade": 10},
+        headers=auth_headers,
+    )
+    assert resposta.status_code == 201
+    # não fixamos o valor exato (seria flaky), só garantimos que veio preenchida
+    assert resposta.json()["data"] is not None
+
+
+def test_movimentacao_aceita_responsavel_nome_livre(client, auth_headers, produto_id):
+    resposta = client.post(
+        "/movimentacoes/",
+        json={
+            "produto_id": produto_id,
+            "tipo": "SAIDA",
+            "quantidade": 2,
+            "responsavel_nome": "Mariana Costa",
+        },
+        headers=auth_headers,
+    )
+    assert resposta.status_code == 201
+    assert resposta.json()["responsavel_nome"] == "Mariana Costa"
+
+
+def test_movimentacao_sem_responsavel_nome_fica_nulo(client, auth_headers, produto_id):
+    resposta = client.post(
+        "/movimentacoes/",
+        json={"produto_id": produto_id, "tipo": "ENTRADA", "quantidade": 1},
+        headers=auth_headers,
+    )
+    assert resposta.status_code == 201
+    assert resposta.json()["responsavel_nome"] is None

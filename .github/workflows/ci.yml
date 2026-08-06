@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do codigo
+      - name: Checkout do código
         uses: actions/checkout@v4
 
       - name: Configurar Python
@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Instalar dependencias
+      - name: Instalar dependências
         run: pip install -r requirements.txt
 
       - name: Rodar testes
@@ -28,7 +28,7 @@ jobs:
         env:
           SECRET_KEY: chave-de-teste-usada-apenas-no-ci
 
-      - name: Verificar se a aplicacao importa sem erro
-        run: python -c "import app.main; print('ok')"
+      - name: Verificar se a aplicação importa sem erro
+        run: python -c "from app.main import app; print('OK: app importa sem erro')"
         env:
           SECRET_KEY: chave-de-teste-usada-apenas-no-ci

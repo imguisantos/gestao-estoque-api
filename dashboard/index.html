@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estoque Central — Painel de Controle</title>
+<script <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161d;
+    --surface: #1a212b;
+    --surface-2: #212a36;
+    --line: #2b3542;
+    --amber: #e8a33d;
+    --amber-dim: #8a6329;
+    --green: #4fb286;
+    --red: #e4572e;
+    --text: #e9edf3;
+    --text-dim: #8b95a5;
+    --text-faint: #5c6674;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(232,163,61,0.06), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Space Grotesk', sans-serif;}
+
+  /* ---------- Barra superior tipo etiqueta de expedição ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 32px;
+    border-bottom:1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    width:38px; height:38px; border:2px solid var(--amber); border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--amber); font-weight:700; font-size:15px;
+    font-family:'IBM Plex Mono', monospace;
+    transform: rotate(0deg);
+  }
+  .brand-text h1{
+    margin:0; font-size:19px; letter-spacing:0.02em; font-weight:700;
+  }
+  .brand-text p{
+    margin:2px 0 0; font-size:11.5px; color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:0.12em;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .status-chip{
+    display:flex; align-items:center; gap:8px;
+    padding:7px 14px; border:1px solid var(--line); border-radius:20px;
+    font-size:12.5px; color:var(--text-dim); font-family:'IBM Plex Mono', monospace;
+  }
+  .status-dot{width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green);}
+  .status-dot.off{background:var(--text-faint); box-shadow:none;}
+
+  /* ---------- Tela de login ---------- */
+  #login-screen{
+    max-width:420px; margin:80px auto; padding:36px;
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  }
+  #login-screen h2{margin:0 0 6px; font-size:20px;}
+  #login-screen p.sub{margin:0 0 26px; color:var(--text-dim); font-size:13.5px;}
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--text-faint); margin-bottom:7px; font-family:'IBM Plex Mono', monospace;
+  }
+  .field input{
+    width:100%; padding:11px 13px; background:var(--bg); border:1px solid var(--line);
+    border-radius:6px; color:var(--text); font-size:14px; font-family:'Inter', sans-serif;
+    transition:border-color .15s;
+  }
+  .field input:focus{outline:none; border-color:var(--amber);}
+  #login-btn{
+    width:100%; padding:12px; background:var(--amber); color:#14181f; border:none;
+    border-radius:6px; font-weight:600; font-size:14px; cursor:pointer; margin-top:6px;
+    transition:filter .15s;
+  }
+  #login-btn:hover{filter:brightness(1.08);}
+  #login-btn:disabled{opacity:0.55; cursor:default;}
+  #login-error{
+    margin-top:14px; padding:10px 12px; background:rgba(228,87,46,0.1);
+    border:1px solid rgba(228,87,46,0.35); border-radius:6px;
+    color:#f0916f; font-size:12.5px; display:none;
+  }
+
+  /* ---------- Painel principal ---------- */
+  #dashboard{display:none; padding:28px 32px 60px; max-width:1360px; margin:0 auto;}
+
+  .kpi-row{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:22px;
+  }
+  .kpi{
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:20px 20px 18px; position:relative; overflow:hidden;
+  }
+  .kpi::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--amber);
+  }
+  .kpi .label{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint);
+    font-family:'IBM Plex Mono', monospace; margin-bottom:10px;
+  }
+  .kpi .value{font-size:28px; font-weight:700; font-family:'Space Grotesk', sans-serif;}
+  .kpi .value.small{font-size:22px;}
+  .kpi .delta{font-size:12px; color:var(--text-dim); margin-top:6px; font-family:'IBM Plex Mono', monospace;}
+  .kpi .delta.warn{color:var(--red);}
+  .kpi .delta.ok{color:var(--green);}
+
+  .grid{display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;}
+
+  .panel{
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:20px 22px 16px; position:relative;
+  }
+  /* Elemento de assinatura: cantos de "mira de scanner" */
+  .panel::before, .panel::after,
+  .panel .corner-br, .panel .corner-bl{
+    content:''; position:absolute; width:14px; height:14px; opacity:0.55;
+    border-color:var(--amber-dim); pointer-events:none;
+  }
+  .panel::before{top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; border-color:var(--amber-dim);}
+  .panel::after{top:-1px; right:-1px; border-top:2px solid; border-right:2px solid; border-color:var(--amber-dim);}
+  .panel .corner-bl{bottom:-1px; left:-1px; border-bottom:2px solid; border-left:2px solid;}
+  .panel .corner-br{bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid;}
+  .panel:hover::before, .panel:hover::after, .panel:hover .corner-bl, .panel:hover .corner-br{
+    border-color:var(--amber); opacity:1; transition:all .2s;
+  }
+
+  .panel h3{
+    margin:0 0 3px; font-size:14px; font-weight:600; font-family:'Space Grotesk', sans-serif;
+  }
+  .panel p.hint{margin:0 0 16px; font-size:11.5px; color:var(--text-faint);}
+  .chart-wrap{position:relative; height:230px;}
+  .chart-wrap.tall{height:290px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table th{
+    text-align:left; padding:8px 6px; color:var(--text-faint); font-weight:500;
+    text-transform:uppercase; letter-spacing:0.06em; font-size:10px;
+    border-bottom:1px solid var(--line); font-family:'IBM Plex Mono', monospace;
+  }
+  table td{padding:9px 6px; border-bottom:1px solid rgba(43,53,66,0.5);}
+  table tr:last-child td{border-bottom:none;}
+  .tag{
+    display:inline-block; padding:2px 8px; border-radius:4px; font-size:10.5px;
+    font-family:'IBM Plex Mono', monospace; font-weight:600;
+  }
+  .tag.baixo{background:rgba(228,87,46,0.15); color:#f0916f;}
+  .empty-state{
+    text-align:center; padding:30px 10px; color:var(--text-faint); font-size:12.5px;
+  }
+
+  footer{
+    text-align:center; padding:20px; color:var(--text-faint); font-size:11px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  @media (max-width:900px){
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .grid, .grid-3{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">EC</div>
+    <div class="brand-text">
+      <h1>Estoque Central</h1>
+      <p>Painel de controle &middot; API de Gestão de Estoque</p>
+    </div>
+  </div>
+  <div class="status-chip">
+    <span class="status-dot off" id="status-dot"></span>
+    <span id="status-text">desconectado</span>
+  </div>
+</header>
+
+<div id="login-screen">
+  <h2>Acessar o painel</h2>
+  <p class="sub">Use as mesmas credenciais da API (Swagger). Os dados são lidos em tempo real do seu servidor local.</p>
+  <div class="field">
+    <label>URL da API</label>
+    <input type="text" id="base-url" value="http://127.0.0.1:8000" />
+  </div>
+  <div class="field">
+    <label>E-mail</label>
+    <input type="email" id="email" placeholder="user@teste.com" />
+  </div>
+  <div class="field">
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="••••••••" />
+  </div>
+  <button id="login-btn">Entrar</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="dashboard">
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="label">Produtos ativos</div>
+      <div class="value mono" id="kpi-total-produtos">—</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Valor total em estoque</div>
+      <div class="value mono small" id="kpi-valor-total">—</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Estoque baixo</div>
+      <div class="value mono" id="kpi-estoque-baixo">—</div>
+      <div class="delta" id="kpi-estoque-baixo-delta"></div>
+    </div>
+    <div class="kpi">
+      <div class="label">Movimentações registradas</div>
+      <div class="value mono" id="kpi-total-mov">—</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Movimentações por mês</h3>
+      <p class="hint">Entradas e saídas de estoque ao longo do tempo</p>
+      <div class="chart-wrap tall"><canvas id="chart-por-mes"></canvas></div>
+    </div>
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Entradas &times; Saídas</h3>
+      <p class="hint">Volume total de unidades movimentadas</p>
+      <div class="chart-wrap tall"><canvas id="chart-entrada-saida"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Produtos por categoria</h3>
+      <p class="hint">Distribuição do catálogo</p>
+      <div class="chart-wrap"><canvas id="chart-categoria"></canvas></div>
+    </div>
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Produtos por fornecedor</h3>
+      <p class="hint">Top 8 fornecedores por nº de produtos</p>
+      <div class="chart-wrap"><canvas id="chart-fornecedor"></canvas></div>
+    </div>
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Mais movimentados</h3>
+      <p class="hint">Top 8 produtos por volume</p>
+      <div class="chart-wrap"><canvas id="chart-top-produtos"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Produtos com estoque abaixo do mínimo</h3>
+      <p class="hint">Requer atenção — reposição recomendada</p>
+      <div id="tabela-estoque-baixo"></div>
+    </div>
+    <div class="panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <h3>Faixa de preço por categoria</h3>
+      <p class="hint">Preço médio dos produtos cadastrados</p>
+      <div class="chart-wrap"><canvas id="chart-preco-categoria"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>ESTOQUE CENTRAL &middot; dados lidos diretamente da API via fetch &middot; nada é armazenado neste arquivo</footer>
+
+<script>
+const AMBER = '#e8a33d';
+const GREEN = '#4fb286';
+const RED = '#e4572e';
+const TEXT_DIM = '#8b95a5';
+const LINE = '#2b3542';
+const PALETTE = ['#e8a33d', '#4fb286', '#5b8def', '#c77dff', '#e4572e', '#3ecbc4', '#f2c14e', '#8b95a5'];
+
+Chart.defaults.color = TEXT_DIM;
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11.5;
+Chart.defaults.borderColor = LINE;
+
+let BASE_URL = '';
+let TOKEN = '';
+
+const $ = (id) => document.getElementById(id);
+
+$('login-btn').addEventListener('click', fazerLogin);
+[$('email'), $('senha')].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); }));
+
+async function fazerLogin() {
+  const btn = $('login-btn');
+  const erro = $('login-error');
+  erro.style.display = 'none';
+  BASE_URL = $('base-url').value.replace(/\/$/, '');
+  const email = $('email').value.trim();
+  const senha = $('senha').value;
+
+  if (!email || !senha) {
+    erro.textContent = 'Preencha e-mail e senha.';
+    erro.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+
+  try {
+    const resp = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha }),
+    });
+    if (!resp.ok) {
+      const corpo = await resp.json().catch(() => ({}));
+      throw new Error(corpo.detail || `Erro ${resp.status} ao fazer login`);
+    }
+    const dados = await resp.json();
+    TOKEN = dados.access_token;
+
+    $('login-screen').style.display = 'none';
+    $('dashboard').style.display = 'block';
+    $('status-dot').classList.remove('off');
+    $('status-text').textContent = BASE_URL.replace(/^https?:\/\//, '');
+
+    await carregarTudo();
+  } catch (err) {
+    erro.textContent = err.message || 'Não foi possível conectar à API. Confira a URL e se o servidor está rodando.';
+    erro.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+async function api(path) {
+  const resp = await fetch(`${BASE_URL}${path}`, {
+    headers: { 'Authorization': `Bearer ${TOKEN}` },
+  });
+  if (!resp.ok) throw new Error(`Falha ao buscar ${path}: ${resp.status}`);
+  return resp.json();
+}
+
+async function apiPaginado(path, limit = 100) {
+  let itens = [];
+  let skip = 0;
+  while (true) {
+    const pagina = await api(`${path}${path.includes('?') ? '&' : '?'}skip=${skip}&limit=${limit}`);
+    itens = itens.concat(pagina.itens);
+    if (pagina.itens.length < limit) break;
+    skip += limit;
+  }
+  return itens;
+}
+
+function formatarMoeda(valor) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+}
+
+async function carregarTudo() {
+  const [resumo, maisMovimentados, produtos, movimentacoes] = await Promise.all([
+    api('/relatorios/resumo-estoque'),
+    api('/relatorios/mais-movimentados?limite=8'),
+    apiPaginado('/produtos/'),
+    apiPaginado('/movimentacoes/'),
+  ]);
+
+  preencherKpis(resumo, movimentacoes);
+  desenharPorMes(movimentacoes);
+  desenharEntradaSaida(movimentacoes);
+  desenharCategorias(produtos);
+  desenharFornecedores(produtos);
+  desenharTopProdutos(maisMovimentados);
+  desenharTabelaEstoqueBaixo(resumo.produtos_estoque_baixo);
+  desenharPrecoPorCategoria(produtos);
+}
+
+function preencherKpis(resumo, movimentacoes) {
+  $('kpi-total-produtos').textContent = resumo.total_produtos;
+  $('kpi-valor-total').textContent = formatarMoeda(resumo.valor_total_estoque);
+  $('kpi-total-mov').textContent = movimentacoes.length;
+
+  const baixo = resumo.produtos_estoque_baixo.length;
+  $('kpi-estoque-baixo').textContent = baixo;
+  const delta = $('kpi-estoque-baixo-delta');
+  if (baixo > 0) {
+    delta.textContent = `⚠ requer reposição`;
+    delta.className = 'delta warn';
+  } else {
+    delta.textContent = `✓ tudo saudável`;
+    delta.className = 'delta ok';
+  }
+}
+
+function desenharPorMes(movimentacoes) {
+  const porMes = {};
+  movimentacoes.forEach(m => {
+    const mes = m.data.slice(0, 7); // YYYY-MM
+    if (!porMes[mes]) porMes[mes] = { ENTRADA: 0, SAIDA: 0 };
+    porMes[mes][m.tipo] += m.quantidade;
+  });
+  const meses = Object.keys(porMes).sort();
+  const nomesMeses = meses.map(m => {
+    const [ano, mes] = m.split('-');
+    const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return `${nomes[parseInt(mes, 10) - 1]}/${ano.slice(2)}`;
+  });
+
+  new Chart($('chart-por-mes'), {
+    type: 'line',
+    data: {
+      labels: nomesMeses,
+      datasets: [
+        {
+          label: 'Entradas',
+          data: meses.map(m => porMes[m].ENTRADA),
+          borderColor: GREEN, backgroundColor: 'rgba(79,178,134,0.12)',
+          fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: GREEN,
+        },
+        {
+          label: 'Saídas',
+          data: meses.map(m => porMes[m].SAIDA),
+          borderColor: RED, backgroundColor: 'rgba(228,87,46,0.10)',
+          fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: RED,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 10, padding: 14 } } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: LINE }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+function desenharEntradaSaida(movimentacoes) {
+  const totalEntrada = movimentacoes.filter(m => m.tipo === 'ENTRADA').reduce((s, m) => s + m.quantidade, 0);
+  const totalSaida = movimentacoes.filter(m => m.tipo === 'SAIDA').reduce((s, m) => s + m.quantidade, 0);
+
+  new Chart($('chart-entrada-saida'), {
+    type: 'bar',
+    data: {
+      labels: ['Entradas', 'Saídas'],
+      datasets: [{
+        data: [totalEntrada, totalSaida],
+        backgroundColor: [GREEN, RED],
+        borderRadius: 6, barThickness: 60,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: LINE }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+function desenharCategorias(produtos) {
+  const contagem = {};
+  produtos.forEach(p => {
+    const nome = p.categoria ? p.categoria.nome : 'Sem categoria';
+    contagem[nome] = (contagem[nome] || 0) + 1;
+  });
+  const labels = Object.keys(contagem);
+
+  new Chart($('chart-categoria'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: Object.values(contagem), backgroundColor: PALETTE, borderColor: '#1a212b', borderWidth: 2 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { boxWidth: 9, padding: 10, font: { size: 10.5 } } } },
+      cutout: '62%',
+    },
+  });
+}
+
+function desenharFornecedores(produtos) {
+  const contagem = {};
+  produtos.forEach(p => {
+    const nome = p.fornecedor ? p.fornecedor.nome : 'Sem fornecedor';
+    contagem[nome] = (contagem[nome] || 0) + 1;
+  });
+  const ordenado = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  new Chart($('chart-fornecedor'), {
+    type: 'bar',
+    data: {
+      labels: ordenado.map(([nome]) => nome.length > 16 ? nome.slice(0, 15) + '…' : nome),
+      datasets: [{ data: ordenado.map(([, qtd]) => qtd), backgroundColor: AMBER, borderRadius: 5 }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: LINE }, beginAtZero: true, ticks: { stepSize: 1 } },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+      },
+    },
+  });
+}
+
+function desenharTopProdutos(maisMovimentados) {
+  new Chart($('chart-top-produtos'), {
+    type: 'bar',
+    data: {
+      labels: maisMovimentados.map(p => p.nome.length > 16 ? p.nome.slice(0, 15) + '…' : p.nome),
+      datasets: [{ data: maisMovimentados.map(p => p.total_movimentado), backgroundColor: '#5b8def', borderRadius: 5 }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: LINE }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+      },
+    },
+  });
+}
+
+function desenharTabelaEstoqueBaixo(lista) {
+  const container = $('tabela-estoque-baixo');
+  if (!lista.length) {
+    container.innerHTML = '<div class="empty-state">Nenhum produto abaixo do estoque mínimo. Tudo em dia ✓</div>';
+    return;
+  }
+  const linhas = lista.map(p => `
+    <tr>
+      <td>${p.nome}</td>
+      <td class="mono">${p.quantidade_estoque}</td>
+      <td class="mono">${p.estoque_minimo}</td>
+      <td><span class="tag baixo">REPOR</span></td>
+    </tr>
+  `).join('');
+  container.innerHTML = `
+    <table>
+      <thead><tr><th>Produto</th><th>Atual</th><th>Mínimo</th><th></th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table>
+  `;
+}
+
+function desenharPrecoPorCategoria(produtos) {
+  const porCategoria = {};
+  produtos.forEach(p => {
+    const nome = p.categoria ? p.categoria.nome : 'Sem categoria';
+    if (!porCategoria[nome]) porCategoria[nome] = [];
+    porCategoria[nome].push(parseFloat(p.preco));
+  });
+  const labels = Object.keys(porCategoria);
+  const medias = labels.map(l => {
+    const valores = porCategoria[l];
+    return valores.reduce((s, v) => s + v, 0) / valores.length;
+  });
+
+  new Chart($('chart-preco-categoria'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: medias, backgroundColor: PALETTE, borderRadius: 5 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => formatarMoeda(ctx.parsed.y) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: LINE }, ticks: { callback: (v) => 'R$ ' + v } },
+      },
+    },
+  });
+}
+</script>
+
+</body>
+</html>

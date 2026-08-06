@@ -111,6 +111,12 @@ class MovimentacaoCreate(BaseModel):
     tipo: TipoMovimentacao
     quantidade: int = Field(..., gt=0)
     motivo: Optional[str] = None
+    # Opcional: se não informado, a API usa a data/hora real da requisição.
+    # Útil para registrar movimentações retroativas (ex: migração de dados históricos).
+    data: Optional[datetime] = None
+    # Opcional: nome livre de quem executou a movimentação no mundo real.
+    # O responsável "oficial" continua sendo o usuário autenticado (usuario_id).
+    responsavel_nome: Optional[str] = None
 
 
 class MovimentacaoOut(BaseModel):
@@ -120,6 +126,7 @@ class MovimentacaoOut(BaseModel):
     quantidade: int
     motivo: Optional[str]
     data: datetime
+    responsavel_nome: Optional[str] = None
     produto_id: int
     usuario_id: int
 

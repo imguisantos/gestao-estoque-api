@@ -3,6 +3,7 @@ import uuid
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -19,6 +20,17 @@ app = FastAPI(
         "Autenticação via JWT (access + refresh token)."
     ),
     version="1.1.0",
+)
+
+# CORS: permite que o dashboard (arquivo HTML aberto localmente, ou hospedado
+# em outro domínio) chame esta API a partir do navegador. Em produção real,
+# o ideal é restringir allow_origins à URL exata do frontend, em vez de "*".
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)

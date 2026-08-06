@@ -45,7 +45,12 @@ def registrar_movimentacao(
         quantidade=mov_in.quantidade,
         motivo=mov_in.motivo,
         usuario_id=usuario.id,
+        responsavel_nome=mov_in.responsavel_nome,
     )
+    # Se uma data foi informada explicitamente, usa ela (permite registrar
+    # movimentações retroativas); senão, deixa o default da coluna (agora) valer.
+    if mov_in.data is not None:
+        movimentacao.data = mov_in.data
 
     try:
         db.add(movimentacao)

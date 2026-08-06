@@ -86,6 +86,11 @@ class Movimentacao(Base):
     quantidade = Column(Integer, nullable=False)
     motivo = Column(String(255), nullable=True)
     data = Column(DateTime, default=datetime.utcnow)
+    # Nome livre de quem executou a movimentação no mundo real (ex: "Carlos Henrique"),
+    # distinto do usuario_id (que é sempre quem estava logado na API). Útil para
+    # registrar operações feitas por alguém que não tem conta no sistema, ou para
+    # popular dados de exemplo com responsáveis variados.
+    responsavel_nome = Column(String(150), nullable=True)
 
     produto_id = Column(Integer, ForeignKey("produtos.id"), nullable=False)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
