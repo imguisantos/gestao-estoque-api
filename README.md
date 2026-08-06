@@ -1,4 +1,4 @@
-# API de Gestão de Estoque
+## API de Gestão de Estoque
 
 API REST para controle de estoque com autenticação JWT, construída com FastAPI, SQLAlchemy e MySQL.
 
