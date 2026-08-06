@@ -29,6 +29,6 @@ jobs:
           SECRET_KEY: chave-de-teste-usada-apenas-no-ci
 
       - name: Verificar se a aplicação importa sem erro
-        run: python -c "from app.main import app; print('OK: app importa sem erro')"
+        run: python -c "import app.main; print('ok')"
         env:
           SECRET_KEY: chave-de-teste-usada-apenas-no-ci
